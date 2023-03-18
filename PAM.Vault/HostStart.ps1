@@ -64,7 +64,7 @@ Install-LabSoftwarePackage -ComputerName $ComputerName -Path $DotNetFramework48.
 $LabVmKeysFolder = 'C:\CyberArkKeys'
 Copy-LabFileItem -DestinationFolder $LabVmKeysFolder -Path $OperatorKeysFolder -ComputerName $ComputerName
 Copy-LabFileItem -DestinationFolder $LabVmKeysFolder -Path $MasterKeysFolder -ComputerName $ComputerName
-Copy-LabFileItem -DestinationFolder "$LabVmCyberArkInstallFolder\License\license.xml" -Path $LicensePath -ComputerName $ComputerName
+Copy-LabFileItem -DestinationFolder "$LabVmCyberArkInstallFolder\License" -Path $LicensePath -ComputerName $ComputerName
 
 # Copy over Vault installation files
 $LocalFilesFolder = New-Item -ItemType Directory -Path (Join-Path -Path $CyberArkInstallFolder -ChildPath 'Vault') -Force
