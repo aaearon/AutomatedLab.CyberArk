@@ -65,13 +65,18 @@ $LabVmKeysFolder = 'C:\CyberArkKeys'
 Copy-LabFileItem -DestinationFolder $LabVmKeysFolder -Path $OperatorKeysFolder -ComputerName $ComputerName
 Copy-LabFileItem -DestinationFolder $LabVmKeysFolder -Path $MasterKeysFolder -ComputerName $ComputerName
 Copy-LabFileItem -DestinationFolder "$LabVmCyberArkInstallFolder\License" -Path $LicensePath -ComputerName $ComputerName
+Invoke-LabCommand -ActivityName 'Ensure correct name for License.xml' -ComputerName $ComputerName -ScriptBlock {
+    Get-ChildItem "$($args[0])\License\*.xml" | ForEach-Object { Move-Item -Path $_.FullName -Destination "$($_.Directory)\License.xml" }
+} -ArgumentList $LabVmCyberArkInstallFolder
 
 # Copy over Vault installation files
 $LocalFilesFolder = New-Item -ItemType Directory -Path (Join-Path -Path $CyberArkInstallFolder -ChildPath 'Vault') -Force
 ExpandFrom-Archive -Path $CyberArkPamInstallPackagePath -OutPath $LocalFilesFolder.FullName -Filter '*Vault*'
 Copy-LabFileItem -DestinationFolderPath $LabVmCyberArkInstallFolder -Path "$($VaultFilesFolder.FullName)\*" -ComputerName $ComputerName
-
-# Update silent.iss with values passed to the role
+Invoke-LabCommand -ActivityName 'Expand Vault installation files' -ComputerName $ComputerName -ScriptBlock {
+    $ServerArchive = Get-ChildItem $args | Where-Object { $_.Name -like 'Server-*' }
+    Expand-Archive -Path $ServerArchive.FullName -DestinationPath "$args\$($ServerArchive.BaseName)"
+} -ArgumentList $LabVmCyberArkInstallFolder
 
 # Copy silent install file
 Copy-LabFileItem -DestinationFolderPath $LabVmCyberArkInstallFolder -Path 'silent.iss' -ComputerName $ComputerName
@@ -86,10 +91,10 @@ function ExpandFrom-Archive {
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $Archive = [System.IO.Compression.ZipFile]::OpenRead($Path)
     $Archive.Entries |
-        Where-Object { $_.FullName -like $Filter } |
-        ForEach-Object {
-            $FileName = $_.Name
-            [System.IO.Compression.ZipFileExtensions]::ExtractToFile($_, "$OutPath\$FileName", $true)
+    Where-Object { $_.FullName -like $Filter } |
+    ForEach-Object {
+        $FileName = $_.Name
+        [System.IO.Compression.ZipFileExtensions]::ExtractToFile($_, "$OutPath\$FileName", $true)
     }
 
     $Archive.Dispose()
