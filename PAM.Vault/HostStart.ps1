@@ -1,7 +1,7 @@
 ﻿param (
     [Parameter(Mandatory = $true)]
     [string]
-    $CyberArkPamInstallPackagePath,
+    $InstallationArchivePath,
 
     [Parameter(Mandatory = $true)]
     [string]
@@ -11,13 +11,13 @@
     [string]
     $MasterKeysFolder,
 
-    [Parameter(Mandatory = $true)]
-    [string]
-    $MasterPassword,
+    # [Parameter(Mandatory = $true)]
+    # [string]
+    # $MasterPassword,
 
-    [Parameter(Mandatory = $true)]
-    [string]
-    $AdministratorPassword,
+    # [Parameter(Mandatory = $true)]
+    # [string]
+    # $AdministratorPassword,
 
     [Parameter(Mandatory = $true)]
     [string]
@@ -43,6 +43,8 @@
     [string]$ComputerName
 )
 
+Import-Module "$PSScriptRoot\..\PAM.Common\CommonFunctions.psm1" -Force
+
 $LabVmCyberArkInstallFolder = 'C:\CyberArkInstall'
 
 Import-Lab -Name $data.Name
@@ -58,7 +60,10 @@ Install-LabSoftwarePackage -ComputerName $ComputerName -Path $VisualCRedistX64.F
 
 # Microsoft Framework .NET 4.8 Runtime
 $DotNetFramework48 = Get-LabInternetFile -Uri 'https://go.microsoft.com/fwlink/?linkid=2088631' -Path $CyberArkInstallFolder -PassThru
-Install-LabSoftwarePackage -ComputerName $ComputerName -Path $DotNetFramework48.FullName -CommandLine '/install /quiet'
+Install-LabSoftwarePackage -ComputerName $ComputerName -Path $DotNetFramework48.FullName -CommandLine '/install /quiet /norestart'
+
+Write-ScreenInfo "Restarting post C++ Redistributable and .NET Framework installation"
+Restart-LabVM -ComputerName $ComputerName -Wait
 
 # License and keys
 $LabVmKeysFolder = 'C:\CyberArkKeys'
@@ -70,32 +75,14 @@ Invoke-LabCommand -ActivityName 'Ensure correct name for License.xml' -ComputerN
 } -ArgumentList $LabVmCyberArkInstallFolder
 
 # Copy over Vault installation files
-$LocalFilesFolder = New-Item -ItemType Directory -Path (Join-Path -Path $CyberArkInstallFolder -ChildPath 'Vault') -Force
-ExpandFrom-Archive -Path $CyberArkPamInstallPackagePath -OutPath $LocalFilesFolder.FullName -Filter '*Vault*'
-Copy-LabFileItem -DestinationFolderPath $LabVmCyberArkInstallFolder -Path "$($VaultFilesFolder.FullName)\*" -ComputerName $ComputerName
+Copy-LabFileItem -DestinationFolderPath $LabVmCyberArkInstallFolder -Path $InstallationArchivePath -ComputerName $ComputerName
 Invoke-LabCommand -ActivityName 'Expand Vault installation files' -ComputerName $ComputerName -ScriptBlock {
-    $ServerArchive = Get-ChildItem $args | Where-Object { $_.Name -like 'Server-*' }
+    $ServerArchive = Get-ChildItem $args | Where-Object { $_.Name -like 'Server-*.zip' }
     Expand-Archive -Path $ServerArchive.FullName -DestinationPath "$args\$($ServerArchive.BaseName)"
 } -ArgumentList $LabVmCyberArkInstallFolder
 
 # Copy silent install file
-Copy-LabFileItem -DestinationFolderPath $LabVmCyberArkInstallFolder -Path 'silent.iss' -ComputerName $ComputerName
+Copy-LabFileItem -DestinationFolderPath $LabVmCyberArkInstallFolder -Path "$PSScriptRoot\silent.iss" -ComputerName $ComputerName
 
-function ExpandFrom-Archive {
-    param (
-        $Path,
-        $OutPath,
-        $Filter
-    )
-
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-    $Archive = [System.IO.Compression.ZipFile]::OpenRead($Path)
-    $Archive.Entries |
-    Where-Object { $_.FullName -like $Filter } |
-    ForEach-Object {
-        $FileName = $_.Name
-        [System.IO.Compression.ZipFileExtensions]::ExtractToFile($_, "$OutPath\$FileName", $true)
-    }
-
-    $Archive.Dispose()
-}
+# Install Vault
+Install-LabSoftwarePackage -ComputerName $ComputerName -LocalPath $LabVmCyberArkInstallFolder\Server-Rls-v13.0\Setup.exe -CommandLine "/s /f1`"$LabVmCyberArkInstallFolder\silent.iss`" /f2`"$LabVmCyberArkInstallFolder\VaultSetup.log`""
