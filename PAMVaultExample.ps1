@@ -8,7 +8,7 @@ $PAMVaultRoleProperties = @{
     MasterKeysFolder = 'C:\LabSources\CyberArkInstallFiles\DemoMasterKeys'
     LicensePath = 'C:\LabSources\CyberArkInstallFiles\nfr_license.xml'
 }
-$PAMVaultRole = Get-LabPostInstallationActivity -CustomRole PAM.Vault -Properties $PAMVaultRoleProperties
+$PAMVaultRole = Get-LabPostInstallationActivity -CustomRole PAMVault -Properties $PAMVaultRoleProperties
 
 Add-LabMachineDefinition -Name $VaultName -PostInstallationActivity $PAMVaultRole -Memory 4GB -Processors 1
 
