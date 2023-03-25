@@ -53,17 +53,16 @@ $CyberArkInstallFolder = New-Item -ItemType Directory -Path (Join-Path -Path $La
 
 #  Microsoft Visual C++ Redistributable for Visual Studio 2015-2022 32-bit and 64-bit versions
 $VisualCRedistX86 = Get-LabInternetFile -Uri 'https://aka.ms/vs/17/release/vc_redist.x86.exe' -Path $CyberArkInstallFolder -PassThru
-Install-LabSoftwarePackage -ComputerName $ComputerName -Path $VisualCRedistX86.FullName -CommandLine '/Q /norestart'
+Install-LabSoftwarePackage -ComputerName $ComputerName -Path $VisualCRedistX86.FullName -CommandLine '/Q'
 
 $VisualCRedistX64 = Get-LabInternetFile -Uri 'https://aka.ms/vs/17/release/vc_redist.x64.exe' -Path $CyberArkInstallFolder -PassThru
-Install-LabSoftwarePackage -ComputerName $ComputerName -Path $VisualCRedistX64.FullName -CommandLine '/Q /norestart'
+Install-LabSoftwarePackage -ComputerName $ComputerName -Path $VisualCRedistX64.FullName -CommandLine '/Q'
 
 # Microsoft Framework .NET 4.8 Runtime
 $DotNetFramework48 = Get-LabInternetFile -Uri 'https://go.microsoft.com/fwlink/?linkid=2088631' -Path $CyberArkInstallFolder -PassThru
-Install-LabSoftwarePackage -ComputerName $ComputerName -Path $DotNetFramework48.FullName -CommandLine '/install /quiet /norestart'
+Install-LabSoftwarePackage -ComputerName $ComputerName -Path $DotNetFramework48.FullName -CommandLine '/install /quiet'
 
-Write-ScreenInfo "Restarting post C++ Redistributable and .NET Framework installation"
-Restart-LabVM -ComputerName $ComputerName -Wait
+Wait-LabVMRestart -ComputerName $ComputerName
 
 # License and keys
 $LabVmKeysFolder = 'C:\CyberArkKeys'
@@ -79,6 +78,18 @@ Copy-LabFileItem -DestinationFolderPath $LabVmCyberArkInstallFolder -Path $Insta
 Invoke-LabCommand -ActivityName 'Expand Vault installation files' -ComputerName $ComputerName -ScriptBlock {
     $ServerArchive = Get-ChildItem $args | Where-Object { $_.Name -like 'Server-*.zip' }
     Expand-Archive -Path $ServerArchive.FullName -DestinationPath "$args\$($ServerArchive.BaseName)"
+} -ArgumentList $LabVmCyberArkInstallFolder
+
+# Scheduled Task for Windows Firewall workaround
+Copy-LabFileItem -DestinationFolderPath $LabVmCyberArkInstallFolder -Path "$PSScriptRoot\FirewallWorkaround.reg" -ComputerName $ComputerName
+Invoke-LabCommand -ActivityName 'Set up Windows Firewall workaround scheduled task for post-installation reboot' -ComputerName $ComputerName -ScriptBlock {
+    $TaskName = 'FirewallWorkaround'
+    # This scheduled task needs to run only after hardening completes (after the reboot of the Vault installation) but the Vault must restart after the keys are imported for it to take effect.
+    # We import then disable the task so it doesn't run again as we'd be stuck in a reboot loop.
+    $TaskAction = New-ScheduledTaskAction -Execute 'PowerShell.exe' -Argument "-NoProfile -WindowStyle Hidden -Command % {regedit.exe /s `"$($args[0])\FirewallWorkaround.reg`";Disable-ScheduledTask -TaskName $($TaskName);Restart-Computer}"
+    $TaskTrigger = New-ScheduledTaskTrigger -AtStartup
+
+    Register-ScheduledTask -TaskName $TaskName -Action $TaskAction -Trigger $TaskTrigger -User SYSTEM
 } -ArgumentList $LabVmCyberArkInstallFolder
 
 # Copy silent install file
