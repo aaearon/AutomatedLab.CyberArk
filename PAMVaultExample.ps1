@@ -10,6 +10,8 @@ $PAMVaultRoleProperties = @{
 }
 $PAMVaultRole = Get-LabPostInstallationActivity -CustomRole PAMVault -Properties $PAMVaultRoleProperties
 
+Add-LabMachineDefinition -Name $VaultName -PostInstallationActivity $PAMVaultRole -Memory 4GB -Processors 2 -OperatingSystem 'Windows Server 2019 Datacenter Evaluation (Desktop Experience)'
+
 # Do everything but the post-installation activities as once that is done for the Vault, WinRM will be unavailable
 Install-Lab -BaseImages -NetworkSwitches -VMs -Domains -NoValidation
 
