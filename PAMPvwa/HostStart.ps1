@@ -58,20 +58,20 @@ Invoke-LabCommand -ActivityName 'Update PVWA configuration files' -ComputerName 
 # Install Pvwa
 Invoke-LabCommand -ActivityName 'PVWA Pre-requisities' -ComputerName $ComputerName -ScriptBlock {
     Set-Location "$($args[0])\Password Vault Web Access-Rls-v13.0\InstallationAutomation"
-    & .\PVWA_Prerequisites.ps1 | Out-Null
+    & .\PVWA_Prerequisites.ps1 6> $null
 } -ArgumentList $LabVmCyberArkInstallFolder
 
 Invoke-LabCommand -ActivityName 'PVWA Installation' -ComputerName $ComputerName -ScriptBlock {
     Set-Location "$($args[0])\Password Vault Web Access-Rls-v13.0\InstallationAutomation\Installation"
-    & .\PVWAInstallation.ps1 | Out-Null
+    & .\PVWAInstallation.ps1 6> $null
 } -ArgumentList $LabVmCyberArkInstallFolder
 
 Invoke-LabCommand -ActivityName 'PVWA Registration' -ComputerName $ComputerName -ScriptBlock {
     Set-Location "$($args[0])\Password Vault Web Access-Rls-v13.0\InstallationAutomation\Registration"
-    & .\PVWARegisterComponent.ps1 -pwd $($args[1]) | Out-Null
+    & .\PVWARegisterComponent.ps1 -pwd $($args[1]) 6> $null
 } -ArgumentList $LabVmCyberArkInstallFolder, $InstallerPassword
 
 Invoke-LabCommand -ActivityName 'PVWA Hardening' -ComputerName $ComputerName -ScriptBlock {
     Set-Location "$($args[0])\Password Vault Web Access-Rls-v13.0\InstallationAutomation"
-    & .\PVWA_Hardening.ps1 | Out-Null
+    & .\PVWA_Hardening.ps1 6> $null
 } -ArgumentList $LabVmCyberArkInstallFolder
