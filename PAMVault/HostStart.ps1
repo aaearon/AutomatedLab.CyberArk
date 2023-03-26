@@ -62,6 +62,7 @@ Install-LabSoftwarePackage -ComputerName $ComputerName -Path $VisualCRedistX64.F
 $DotNetFramework48 = Get-LabInternetFile -Uri 'https://go.microsoft.com/fwlink/?linkid=2088631' -Path $CyberArkInstallFolder -PassThru
 Install-LabSoftwarePackage -ComputerName $ComputerName -Path $DotNetFramework48.FullName -CommandLine '/install /quiet'
 
+Write-ScreenInfo 'Waiting for restart to complete before continuing Vault installation'
 Wait-LabVMRestart -ComputerName $ComputerName
 
 # License and keys
@@ -97,3 +98,7 @@ Copy-LabFileItem -DestinationFolderPath $LabVmCyberArkInstallFolder -Path "$PSSc
 
 # Install Vault
 Install-LabSoftwarePackage -ComputerName $ComputerName -LocalPath $LabVmCyberArkInstallFolder\Server-Rls-v13.0\Setup.exe -CommandLine "/s /f1`"$LabVmCyberArkInstallFolder\silent.iss`" /f2`"$LabVmCyberArkInstallFolder\VaultSetup.log`""
+
+Write-ScreenInfo "Waiting for Vault installation to be complete and accessible on port 1858."
+Wait-VaultConnectivity -ComputerName $ComputerName
+Write-ScreenInfo "Vault is accessible on port 1858! Done."

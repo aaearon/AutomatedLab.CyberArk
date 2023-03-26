@@ -16,3 +16,17 @@
 
     $Archive.Dispose()
 }
+
+function Wait-VaultConnectivity {
+    param (
+        $ComputerName,
+        $Port = 1858,
+        $RetryInterval = 10
+    )
+
+    $ProgressPreference = 'SilentlyContinue'
+
+    do {
+        Start-Sleep $RetryInterval
+    } until (Test-NetConnection $ComputerName -Port $Port -InformationLevel 'Quiet' -WarningAction SilentlyContinue | Where-Object { $_.TcpTestSucceeded })
+}
