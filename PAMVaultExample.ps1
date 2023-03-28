@@ -1,6 +1,7 @@
-﻿$VaultName = 'PAMVault01'
+﻿$VaultName = 'VAULT01'
 $VaultIpAddress = '192.168.11.3'
-$PvwaName = 'PAMPvwa01'
+$PvwaName = 'COMP01'
+$CpmName = $PvwaName
 
 New-LabDefinition -Name PAMVault -DefaultVirtualizationEngine HyperV -VmPath C:\AutomatedLab-VMs
 
@@ -20,19 +21,25 @@ $PAMPvwaRoleProperties = @{
 }
 $PAMPvwaRole = Get-LabPostInstallationActivity -CustomRole PAMPvwa -Properties $PAMPvwaRoleProperties
 
-Add-LabMachineDefinition -Name $PvwaName -PostInstallationActivity $PAMPvwaRole -OperatingSystem 'Windows Server 2019 Datacenter Evaluation (Desktop Experience)'
+$PAMCpmRoleProperties = @{
+    InstallationArchivePath = 'C:\LabSources\CyberArkInstallFiles\Central Policy Manager-Rls-v13.0.zip'
+    VaultIpAddress          = $VaultIpAddress
+}
+$PAMCpmRole = Get-LabPostInstallationActivity -CustomRole PAMCpm -Properties $PAMCpmRoleProperties
+
+Add-LabMachineDefinition -Name $PvwaName -PostInstallationActivity $PAMPvwaRole,$PAMCpmRole -OperatingSystem 'Windows Server 2019 Datacenter Evaluation (Desktop Experience)'
 
 # Do everything but the post-installation activities as once that is done for the Vault, WinRM will be unavailable
 Install-Lab -BaseImages -NetworkSwitches -VMs -Domains -NoValidation
 
 # Start the Vault VM and wait for it to be ready
 Write-ScreenInfo 'Starting virtual machines'
-Start-LabVM -All -Wait
+Start-LabVM -All
 
-Checkpoint-LabVM -All -SnapshotName 'Pre-install'
+# By the time the Vault starts and installs, the other VMs will be ready
+Wait-LabVM -ComputerName $VaultName
 
 # Perform the Vault installation. The hardening part of the installation will kill the ability to use WinRM so it will timeout and throw an error. We want to ignore that error.
 Invoke-LabCommand -ComputerName $VaultName -PostInstallationActivity -ActivityName 'CyberArk Vault installation' -ErrorAction SilentlyContinue
 
-# Perform the PVWA installation.
-Invoke-LabCommand -ComputerName $PvwaName -PostInstallationActivity -ActivityName 'CyberArk Pvwa installation'
+Invoke-LabCommand -ComputerName $PvwaName -PostInstallationActivity -ActivityName 'CyberArk Pvwa and CPM installation'
