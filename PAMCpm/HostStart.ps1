@@ -45,10 +45,11 @@ Invoke-LabCommand -ActivityName 'CPM PreInstallation' -ComputerName $ComputerNam
     Write-Output A | powershell "& .\CPM_PreInstallation.ps1" 6> $null
 } -ArgumentList $LabVmCyberArkInstallFolder, $InstallationArchiveBaseName
 
+# We have the installation silently continue as sometimes the installation CAN (but not always) result in a restart. The AutomatedLab gracefully handles this.
 Invoke-LabCommand -ActivityName 'CPM Install' -ComputerName $ComputerName -ScriptBlock {
     Set-Location "$($args[0])\$($args[1])\InstallationAutomation\Installation"
     & .\CPMInstallation.ps1 6> $null
-} -ArgumentList $LabVmCyberArkInstallFolder, $InstallationArchiveBaseName
+} -ArgumentList $LabVmCyberArkInstallFolder, $InstallationArchiveBaseName -ErrorAction SilentlyContinue
 
 Invoke-LabCommand -ActivityName 'CPM Registration' -ComputerName $ComputerName -ScriptBlock {
     Set-Location "$($args[0])\$($args[1])\InstallationAutomation\Registration"
