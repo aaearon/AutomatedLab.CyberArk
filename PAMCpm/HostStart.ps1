@@ -40,9 +40,9 @@ Invoke-LabCommand -ActivityName 'Update CPM configuration files' -ComputerName $
     Set-XmlConfigurationValue -Path "$($args[0])\$($args[1])\InstallationAutomation\Registration\CPMRegisterComponentConfig.xml" -Parameter 'vaultUser' -Value $args[3]
 } -ArgumentList $LabVmCyberArkInstallFolder, $InstallationArchiveBaseName, $VaultIpAddress, $InstallerUsername
 
-Invoke-LabCommand -ActivityName 'CPM Pre-requisities' -ComputerName $ComputerName -ScriptBlock {
+Invoke-LabCommand -ActivityName 'CPM PreInstallation' -ComputerName $ComputerName -ScriptBlock {
     Set-Location "$($args[0])\$($args[1])\InstallationAutomation"
-    & .\CPM_PreInstallation.ps1 6> $null
+    Write-Output A | powershell "& .\CPM_PreInstallation.ps1" 6> $null
 } -ArgumentList $LabVmCyberArkInstallFolder, $InstallationArchiveBaseName
 
 Invoke-LabCommand -ActivityName 'CPM Install' -ComputerName $ComputerName -ScriptBlock {
