@@ -1,23 +1,4 @@
-﻿function ExpandFrom-Archive {
-    param (
-        $Path,
-        $OutPath,
-        $Filter
-    )
-
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-    $Archive = [System.IO.Compression.ZipFile]::OpenRead($Path)
-    $Archive.Entries |
-    Where-Object { $_.FullName -like $Filter } |
-    ForEach-Object {
-        $FileName = $_.Name
-        [System.IO.Compression.ZipFileExtensions]::ExtractToFile($_, "$OutPath\$FileName", $true)
-    }
-
-    $Archive.Dispose()
-}
-
-function Wait-VaultConnectivity {
+﻿function Wait-VaultConnectivity {
     param (
         $ComputerName,
         $Port = 1858,
@@ -48,6 +29,7 @@ function Install-PAMCommonPreRequisites {
         $InstalledBuild = Get-ItemPropertyValue -Path 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\X86' -Name Bld
 
         if ($InstalledBuild -ne $DesiredBuild -or $null -eq $InstalledBuild) {
+            Write-ScreenInfo 'Installing Visual C++ Redistributable 2022 x86'
             $VisualCRedistX86 = Get-LabInternetFile -Uri 'https://aka.ms/vs/17/release/vc_redist.x86.exe' -Path $CyberArkInstallFolder -PassThru
             Install-LabSoftwarePackage -ComputerName $ComputerName -Path $VisualCRedistX86.FullName -CommandLine '/Q'
         }
@@ -58,16 +40,18 @@ function Install-PAMCommonPreRequisites {
         $InstalledBuild = Get-ItemPropertyValue -Path 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\X86' -Name Bld
 
         if ($InstalledBuild -ne $DesiredBuild -or $null -eq $InstalledBuild) {
+            Write-ScreenInfo 'Installing Visual C++ Redistributable 2022 x64'
             $VisualCRedistX64 = Get-LabInternetFile -Uri 'https://aka.ms/vs/17/release/vc_redist.x64.exe' -Path $CyberArkInstallFolder -PassThru
             Install-LabSoftwarePackage -ComputerName $ComputerName -Path $VisualCRedistX64.FullName -CommandLine '/Q'
         }
     }
 
     if ($DotNetFramework48) {
-        $DesiredRelease = 528040 # .NET Framework 4.8
+        $DesiredRelease = 528049 # .NET Framework 4.8
         $InstalledRelease = Get-ItemPropertyValue -Path 'HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full' -Name Release
 
-        if ($InstalledRelease -lt $DesiredRelease -or $null -eq $InstalledRelease) {
+        if ($InstalledRelease -ne $DesiredRelease -or $null -eq $InstalledRelease) {
+            Write-ScreenInfo 'Installing .NET Framework 4.8'
             $RequiresRestart = $true
             $DotNetFramework48 = Get-LabInternetFile -Uri 'https://go.microsoft.com/fwlink/?linkid=2088631' -Path $CyberArkInstallFolder -PassThru
             Install-LabSoftwarePackage -ComputerName $ComputerName -Path $DotNetFramework48.FullName -CommandLine '/install /quiet /norestart'

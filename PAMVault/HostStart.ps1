@@ -43,27 +43,12 @@
     [string]$ComputerName
 )
 
-Import-Module "$PSScriptRoot\..\PAM.Common\CommonFunctions.psm1" -Force
+Import-Module "$PSScriptRoot\..\PAMCommon\CommonFunctions.psm1" -Force
+$InstallationArchiveBaseName = (Get-Item $InstallationArchivePath).BaseName
 
 $LabVmCyberArkInstallFolder = 'C:\CyberArkInstall'
 
-Import-Lab -Name $data.Name
-
-$CyberArkInstallFolder = New-Item -ItemType Directory -Path (Join-Path -Path $LabSources -ChildPath 'CyberArkInstall') -Force
-
-#  Microsoft Visual C++ Redistributable for Visual Studio 2015-2022 32-bit and 64-bit versions
-$VisualCRedistX86 = Get-LabInternetFile -Uri 'https://aka.ms/vs/17/release/vc_redist.x86.exe' -Path $CyberArkInstallFolder -PassThru
-Install-LabSoftwarePackage -ComputerName $ComputerName -Path $VisualCRedistX86.FullName -CommandLine '/Q'
-
-$VisualCRedistX64 = Get-LabInternetFile -Uri 'https://aka.ms/vs/17/release/vc_redist.x64.exe' -Path $CyberArkInstallFolder -PassThru
-Install-LabSoftwarePackage -ComputerName $ComputerName -Path $VisualCRedistX64.FullName -CommandLine '/Q'
-
-# Microsoft Framework .NET 4.8 Runtime
-$DotNetFramework48 = Get-LabInternetFile -Uri 'https://go.microsoft.com/fwlink/?linkid=2088631' -Path $CyberArkInstallFolder -PassThru
-Install-LabSoftwarePackage -ComputerName $ComputerName -Path $DotNetFramework48.FullName -CommandLine '/install /quiet'
-
-Write-ScreenInfo 'Waiting for restart to complete before continuing Vault installation'
-Wait-LabVMRestart -ComputerName $ComputerName
+Install-PAMCommonPreRequisites -ComputerName $ComputerName -VisualCRedistributable32 $true -VisualCRedistributable64 $true -DotNetFramework48 $true
 
 # License and keys
 $LabVmKeysFolder = 'C:\CyberArkKeys'
@@ -77,9 +62,9 @@ Invoke-LabCommand -ActivityName 'Ensure correct name for License.xml' -ComputerN
 # Copy over Vault installation files
 Copy-LabFileItem -DestinationFolderPath $LabVmCyberArkInstallFolder -Path $InstallationArchivePath -ComputerName $ComputerName
 Invoke-LabCommand -ActivityName 'Expand Vault installation files' -ComputerName $ComputerName -ScriptBlock {
-    $ServerArchive = Get-ChildItem $args | Where-Object { $_.Name -like 'Server-*.zip' }
-    Expand-Archive -Path $ServerArchive.FullName -DestinationPath "$args\$($ServerArchive.BaseName)"
-} -ArgumentList $LabVmCyberArkInstallFolder
+    Set-Location $args[0]
+    Expand-Archive -Path "$($args[0])\$($args[1]).zip"
+} -ArgumentList $LabVmCyberArkInstallFolder, $InstallationArchiveBaseName
 
 # Scheduled Task for Windows Firewall workaround
 Copy-LabFileItem -DestinationFolderPath $LabVmCyberArkInstallFolder -Path "$PSScriptRoot\FirewallWorkaround.reg" -ComputerName $ComputerName
@@ -97,8 +82,9 @@ Invoke-LabCommand -ActivityName 'Set up Windows Firewall workaround scheduled ta
 Copy-LabFileItem -DestinationFolderPath $LabVmCyberArkInstallFolder -Path "$PSScriptRoot\silent.iss" -ComputerName $ComputerName
 
 # Install Vault
-Install-LabSoftwarePackage -ComputerName $ComputerName -LocalPath $LabVmCyberArkInstallFolder\Server-Rls-v13.0\Setup.exe -CommandLine "/s /f1`"$LabVmCyberArkInstallFolder\silent.iss`" /f2`"$LabVmCyberArkInstallFolder\VaultSetup.log`""
+Install-LabSoftwarePackage -ComputerName $ComputerName -LocalPath "$LabVmCyberArkInstallFolder\$InstallationArchiveBaseName\Setup.exe" -CommandLine "/s /f1`"$LabVmCyberArkInstallFolder\silent.iss`" /f2`"$LabVmCyberArkInstallFolder\VaultSetup.log`""
 
-Write-ScreenInfo "Waiting for Vault installation to be complete and accessible on port 1858."
-Wait-VaultConnectivity -ComputerName $ComputerName
-Write-ScreenInfo "Vault is accessible on port 1858! Done."
+# The below is simply not reliable (TNC seems to get stuck)
+# Write-ScreenInfo "Waiting for Vault installation to be complete and accessible on port 1858."
+# Wait-VaultConnectivity -ComputerName $ComputerName
+# Write-ScreenInfo "Vault is accessible on port 1858! Done."
