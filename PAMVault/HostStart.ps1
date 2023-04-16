@@ -72,7 +72,7 @@ Invoke-LabCommand -ActivityName 'Set up Windows Firewall workaround scheduled ta
     $TaskName = 'FirewallWorkaround'
     # This scheduled task needs to run only after hardening completes (after the reboot of the Vault installation) but the Vault must restart after the keys are imported for it to take effect.
     # We import then disable the task so it doesn't run again as we'd be stuck in a reboot loop.
-    $TaskAction = New-ScheduledTaskAction -Execute 'PowerShell.exe' -Argument "-NoProfile -WindowStyle Hidden -Command % {regedit.exe /s `"$($args[0])\FirewallWorkaround.reg`";Disable-ScheduledTask -TaskName $($TaskName);Restart-Computer}"
+    $TaskAction = New-ScheduledTaskAction -Execute 'PowerShell.exe' -Argument "-NoProfile -WindowStyle Hidden -Command % {regedit.exe /s `"$($args[0])\FirewallWorkaround.reg`";Disable-ScheduledTask -TaskName $($TaskName);shutdown.exe /r /t 0}"
     $TaskTrigger = New-ScheduledTaskTrigger -AtStartup
 
     Register-ScheduledTask -TaskName $TaskName -Action $TaskAction -Trigger $TaskTrigger -User SYSTEM
