@@ -56,7 +56,8 @@ Invoke-LabCommand -ActivityName 'CPM Registration' -ComputerName $ComputerName -
     & .\CPMRegisterCommponent.ps1 -pwd $($args[2]) 6> $null
 } -ArgumentList $LabVmCyberArkInstallFolder, $InstallationArchiveBaseName, $InstallerPassword
 
+# Silently continue the hardening as it will 'fail' when the CPM Scanner service attempts to start but cannot as the PVWA has an untrusted certificate.
 Invoke-LabCommand -ActivityName 'CPM Hardening' -ComputerName $ComputerName -ScriptBlock {
     Set-Location "$($args[0])\$($args[1])\InstallationAutomation"
     & .\CPM_Hardening.ps1 6> $null
-} -ArgumentList $LabVmCyberArkInstallFolder, $InstallationArchiveBaseName
+} -ArgumentList $LabVmCyberArkInstallFolder, $InstallationArchiveBaseName -ErrorAction SilentlyContinue
