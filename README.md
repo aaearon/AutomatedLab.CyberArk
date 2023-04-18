@@ -2,7 +2,7 @@
 
 Custom CyberArk roles to be used with [AutomatedLab](https://github.com/AutomatedLab/).
 
-Copy all folders starting with PAM to `$LabSources\CustomRoles`. See `PAMVaultExample.ps1` for an example of how to use the roles.
+Copy all folders starting with `PAM` to `$LabSources\CustomRoles`. See `PAMVaultExample.ps1` for an example of how to use the roles.
 
 ## PAMVault
 
@@ -40,14 +40,12 @@ The role requires the following parameters being passed in it's post installatio
 * (optional) InstallerUsername - The name of the user to register the PVWA with.
 * (optional) InstallerPassword - The password for the user to register the PVWA with.
 
-## CPMPvwa
+## PAMCpm
 
 This role can be used to install a CyberArk Central Policy Manager. The user and password for the installation as well as the Vault IP can be customized. This role can be installed on the same machine as one with the PAMPvwa role.
 
 The role will install:
 
-* Microsoft Visual C++ Redistributable for Visual Studio 2015-2022 32-bit
-* Microsoft Visual C++ Redistributable for Visual Studio 2015-2022 64-bit
 * Microsoft Framework .NET 4.8 Runtime
 * The CyberArk Central Policy Manager
 
@@ -55,5 +53,21 @@ The role requires the following parameters being passed in it's post installatio
 
 * InstallationArchivePath - The full path to the Vault setup archive (`Central Policy Manager-Rls-*.zip`)
 * VaultIpAddress - The IP address of the Vault.
-* (optional) InstallerUsername - The name of the user to register the PVWA with.
-* (optional) InstallerPassword - The password for the user to register the PVWA with.
+* (optional) InstallerUsername - The name of the user to register the CPM with.
+* (optional) InstallerPassword - The password for the user to register the CPM with.
+
+## PAMPsm
+
+This role can be used to install a CyberArk Privileged Session Manager. The user and password for the installation as well as the Vault IP can be customized. This role is meant to be installed on it's own machine.
+
+The role will install:
+
+* Microsoft Framework .NET 4.8 Runtime
+* The CyberArk Privileged Session Manager
+
+The role requires the following parameters being passed in it's post installation activity initilization:
+
+* InstallationArchivePath - The full path to the Vault setup archive (`Privileged Session Manager-Rls-*.zip`)
+* VaultIpAddress - The IP address of the Vault.
+* (optional) InstallerUsername - The name of the user to register the PSM with.
+* (optional) InstallerPassword - The password for the user to register the PSM with.
