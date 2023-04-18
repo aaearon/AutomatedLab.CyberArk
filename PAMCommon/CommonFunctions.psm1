@@ -22,7 +22,7 @@ function Install-PAMCommonPreRequisites {
 
     $RequiresRestart = $false
 
-    $CyberArkInstallFolder = New-Item -ItemType Directory -Path (Join-Path -Path $LabSources -ChildPath 'CyberArkInstall') -Force
+    $CyberArkInstallFolder = New-Item -ItemType Directory -Path (Join-Path -Path $LabSources -ChildPath 'SoftwarePackages') -Force
 
     if ($VisualCRedistributable32) {
         $DesiredBuild = 31938 # 2022
