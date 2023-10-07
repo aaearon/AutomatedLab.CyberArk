@@ -20,6 +20,8 @@
     $ComputerName
 )
 
+Import-Lab $data.Name
+
 Import-Module "$PSScriptRoot\..\PAMCommon\CommonFunctions.psm1" -Force
 
 $InstallationArchiveBaseName = (Get-Item $InstallationArchivePath).BaseName
